@@ -1,0 +1,21 @@
+# Large datasets - too big for GitHub (use Git LFS or cloud storage)
+*.csv
+bearings_dataset/
+
+# Installers
+*.exe
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
