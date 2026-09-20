@@ -13,6 +13,16 @@ import os
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
+# Auto-load .env file (if present) — runs before any config reads
+# ---------------------------------------------------------------------------
+try:
+    from dotenv import load_dotenv
+    _env_file = Path(__file__).resolve().parent.parent / ".env"
+    load_dotenv(dotenv_path=_env_file, override=False)  # won't override existing shell vars
+except ImportError:
+    pass  # dotenv optional — env vars may be set by the shell instead
+
+# ---------------------------------------------------------------------------
 # Dataset Path Resolution
 # ---------------------------------------------------------------------------
 
@@ -32,6 +42,10 @@ def _resolve_data_dir() -> Path:
     repo_root = Path(__file__).resolve().parent.parent
     return repo_root
 
+
+# Repository root — always the folder containing agent/, data/, scripts/, tests/
+# This is where docs, rag_index, and code live (may differ from DATA_DIR for large CSVs)
+REPO_ROOT: Path = Path(__file__).resolve().parent.parent
 
 DATA_DIR: Path = _resolve_data_dir()
 

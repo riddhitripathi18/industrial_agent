@@ -1,6 +1,7 @@
 # Large datasets - too big for GitHub (use Git LFS or cloud storage)
 *.csv
 bearings_dataset/
+data/rag_index/
 
 # Installers
 *.exe
