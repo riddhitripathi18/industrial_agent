@@ -3,3 +3,8 @@ numpy>=1.24.0
 scipy>=1.10.0
 pytest>=7.4.0
 pydantic>=2.0.0
+python-dotenv>=1.0.0
+
+# Phase 4 — LLM Agent
+google-adk>=0.1.0
+google-genai>=0.8.0
