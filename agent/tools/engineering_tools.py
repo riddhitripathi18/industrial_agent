@@ -153,8 +153,10 @@ def calc_overall_heat_transfer_coeff(
             U_v[i] = float("nan")
 
     # Baseline U: mean of first 5% of run (clean exchanger)
-    n5      = max(1, int(n * 0.05))
-    U_clean = float(np.nanmean(U_v[:n5]))
+    n5        = max(1, int(n * 0.05))
+    first_5pct = U_v[:n5]
+    valid_u0   = first_5pct[~np.isnan(first_5pct)]
+    U_clean    = float(np.mean(valid_u0)) if len(valid_u0) > 0 else float(np.nanmean(U_v) if np.any(~np.isnan(U_v)) else 0.0)
 
     return {
         "exchanger_id": eid,
@@ -223,6 +225,10 @@ def calc_fouling_resistance(
         first_idx = int(np.argmax(breach_mask))
         tema_breach_hour = round(float(time_arr[first_idx]), 2)
 
+    valid_rf = Rf[~np.isnan(Rf)]
+    rf_max   = round(float(np.nanmax(valid_rf)), 8) if len(valid_rf) > 0 else None
+    rf_final = round(float(valid_rf[-1]), 8)         if len(valid_rf) > 0 else None
+
     return {
         "exchanger_id":    exchanger_id.upper(),
         "U_clean":         round(U_clean, 4),
@@ -231,8 +237,8 @@ def calc_fouling_resistance(
         "tema_breach_hour": tema_breach_hour,
         "time_hr":         _to_list(time_arr),
         "Rf":              _to_list(Rf),
-        "Rf_max":          round(float(np.nanmax(Rf)), 8),
-        "Rf_final":        round(float(Rf[~np.isnan(Rf)][-1]), 8) if not np.all(np.isnan(Rf)) else None,
+        "Rf_max":          rf_max,
+        "Rf_final":        rf_final,
         "n_points":        len(Rf),
     }
 
