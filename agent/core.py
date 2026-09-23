@@ -525,7 +525,7 @@ class IndustrialAgent:
                 "Get a key at: https://aistudio.google.com/app/apikey"
             )
 
-        self.model_name = model_name or os.environ.get("LLM_MODEL", "gemini-2.5-flash")
+        self.model_name = model_name or os.environ.get("LLM_MODEL", "gemini-3.5-flash-lite")
         self.verbose    = verbose
 
         # Initialize client
@@ -578,8 +578,18 @@ class IndustrialAgent:
                 return text
             except Exception as e:
                 err_str = str(e)
-                # Check for Gemini Free Tier 429 RESOURCE_EXHAUSTED
+                # Check for Gemini Free Tier daily quota or per-minute quota
                 if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                    # If daily quota for current model is exhausted, automatically fallback to gemini-3.5-flash-lite
+                    if ("PerDay" in err_str or "limit: 20" in err_str) and self.model_name != "gemini-3.5-flash-lite":
+                        logger.warning(f"Daily quota reached for {self.model_name}. Switching to gemini-3.5-flash-lite...")
+                        self.model_name = "gemini-3.5-flash-lite"
+                        self.chat = self.client.chats.create(
+                            model=self.model_name,
+                            config=self._afc_config,
+                        )
+                        return self.ask(message, max_retries=1)
+
                     delay_match = re.search(r"retry\s+in\s+([\d\.]+)\s*s", err_str, re.IGNORECASE) or re.search(r"'retryDelay':\s*'(\d+)s'", err_str)
                     delay = float(delay_match.group(1)) if delay_match else 15.0
                     delay = min(delay, 25.0)
@@ -590,11 +600,10 @@ class IndustrialAgent:
                         continue
 
                     return (
-                        f"⏳ **Gemini Free Tier Rate Limit (5 requests/minute)**\n\n"
-                        f"The free Gemini API tier permits 5 requests per minute. Because diagnostic tool calling involves "
-                        f"multiple function turns, the limit was temporarily reached.\n\n"
+                        f"⏳ **Gemini Free Tier Rate Limit**\n\n"
+                        f"The free Gemini tier permits a limited number of requests per minute.\n\n"
                         f"👉 **Please wait ~{int(delay)} seconds and try your question again.**\n\n"
-                        f"*Tip: If you'd like unlimited throughput, you can attach a pay-as-you-go billing account in Google AI Studio.*"
+                        f"*Tip: If you'd like unlimited throughput, you can enable pay-as-you-go billing in Google AI Studio.*"
                     )
                 return f"Agent error: {e}"
 
