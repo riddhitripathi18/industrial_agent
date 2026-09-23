@@ -220,6 +220,10 @@ document.addEventListener("DOMContentLoaded", () => {
     queryInput.style.height = "auto";
     sendBtn.disabled = true;
 
+    // Temporarily disable quick runbook buttons to avoid rapid burst rate limits
+    const actionBtns = document.querySelectorAll(".runbook-btn, .asset-card, .cap-card");
+    actionBtns.forEach(b => { b.style.pointerEvents = "none"; b.style.opacity = "0.7"; });
+
     // Show telemetry progress
     queryProgressBar.style.display = "flex";
     progressText.textContent = "Executing engineering tools & querying plant telemetry...";
@@ -242,10 +246,11 @@ document.addEventListener("DOMContentLoaded", () => {
         activeModelTag.textContent = data.model.toUpperCase();
       }
     } catch (err) {
-      appendMessage("agent", `⚠️ **Diagnostic Execution Notice**\n\n${err.message}`);
+      appendMessage("agent", `⚠️ **Diagnostic Notice**\n\n${err.message}`);
     } finally {
       queryProgressBar.style.display = "none";
       sendBtn.disabled = false;
+      actionBtns.forEach(b => { b.style.pointerEvents = "auto"; b.style.opacity = "1"; });
       queryInput.focus();
     }
   }

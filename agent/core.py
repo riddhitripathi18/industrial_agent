@@ -25,6 +25,7 @@ Composite Agent Tools (simple args → Gemini can call them directly):
 """
 
 import os
+import re
 import json
 import time
 import logging
@@ -548,7 +549,7 @@ class IndustrialAgent:
         if self.verbose:
             logger.info(f"Agent initialized: {self.model_name}, {len(AGENT_TOOLS)} tools registered")
 
-    def ask(self, message: str) -> str:
+    def ask(self, message: str, max_retries: int = 2) -> str:
         """
         Send a message to the agent and return the text response.
 
@@ -561,20 +562,41 @@ class IndustrialAgent:
 
         Args:
             message: Natural language question or command.
+            max_retries: Times to retry if a transient 429 rate limit is received.
 
         Returns:
             Agent's text response as a string.
         """
         t0 = time.perf_counter()
-        try:
-            response = self.chat.send_message(message)
-            elapsed = time.perf_counter() - t0
-            text    = response.text or ""
-            if self.verbose:
-                logger.info(f"Response in {elapsed:.2f}s")
-            return text
-        except Exception as e:
-            return f"Agent error: {e}"
+        for attempt in range(max_retries + 1):
+            try:
+                response = self.chat.send_message(message)
+                elapsed = time.perf_counter() - t0
+                text    = response.text or ""
+                if self.verbose:
+                    logger.info(f"Response in {elapsed:.2f}s")
+                return text
+            except Exception as e:
+                err_str = str(e)
+                # Check for Gemini Free Tier 429 RESOURCE_EXHAUSTED
+                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                    delay_match = re.search(r"retry\s+in\s+([\d\.]+)\s*s", err_str, re.IGNORECASE) or re.search(r"'retryDelay':\s*'(\d+)s'", err_str)
+                    delay = float(delay_match.group(1)) if delay_match else 15.0
+                    delay = min(delay, 25.0)
+
+                    if attempt < max_retries:
+                        logger.info(f"Gemini 429 rate limit hit. Waiting {delay:.1f}s before retry ({attempt+1}/{max_retries})...")
+                        time.sleep(delay + 1.0)
+                        continue
+
+                    return (
+                        f"⏳ **Gemini Free Tier Rate Limit (5 requests/minute)**\n\n"
+                        f"The free Gemini API tier permits 5 requests per minute. Because diagnostic tool calling involves "
+                        f"multiple function turns, the limit was temporarily reached.\n\n"
+                        f"👉 **Please wait ~{int(delay)} seconds and try your question again.**\n\n"
+                        f"*Tip: If you'd like unlimited throughput, you can attach a pay-as-you-go billing account in Google AI Studio.*"
+                    )
+                return f"Agent error: {e}"
 
     def reset(self):
         """Start a fresh conversation (clears history)."""
