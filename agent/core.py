@@ -24,8 +24,6 @@ Composite Agent Tools (simple args → Gemini can call them directly):
     search_knowledge()                → RAG semantic search
 """
 
-from __future__ import annotations
-
 import os
 import json
 import time
@@ -526,9 +524,8 @@ class IndustrialAgent:
                 "Get a key at: https://aistudio.google.com/app/apikey"
             )
 
-        self.model_name = model_name or os.environ.get("LLM_MODEL", "gemini-2.0-flash")
+        self.model_name = model_name or os.environ.get("LLM_MODEL", "gemini-2.5-flash")
         self.verbose    = verbose
-        self._history   = []   # list of dicts: {"role": ..., "parts": [...]}
 
         # Initialize client
         self.client = genai.Client(api_key=api_key)
@@ -540,6 +537,12 @@ class IndustrialAgent:
             automatic_function_calling=genai_types.AutomaticFunctionCallingConfig(
                 disable=False,
             ),
+        )
+
+        # Create interactive multi-turn chat session with AFC
+        self.chat = self.client.chats.create(
+            model=self.model_name,
+            config=self._afc_config,
         )
 
         if self.verbose:
@@ -563,31 +566,27 @@ class IndustrialAgent:
             Agent's text response as a string.
         """
         t0 = time.perf_counter()
-        # Append user turn
-        self._history.append({"role": "user", "parts": [{"text": message}]})
-
         try:
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=self._history,
-                config=self._afc_config,
-            )
+            response = self.chat.send_message(message)
             elapsed = time.perf_counter() - t0
-            text    = response.text
-            # Append assistant turn
-            self._history.append({"role": "model", "parts": [{"text": text}]})
+            text    = response.text or ""
             if self.verbose:
                 logger.info(f"Response in {elapsed:.2f}s")
             return text
         except Exception as e:
-            self._history.pop()   # remove failed user turn
             return f"Agent error: {e}"
 
     def reset(self):
         """Start a fresh conversation (clears history)."""
-        self._history = []
+        self.chat = self.client.chats.create(
+            model=self.model_name,
+            config=self._afc_config,
+        )
 
     @property
     def history(self) -> list:
         """Return the raw conversation history."""
-        return self._history
+        try:
+            return self.chat.get_history()
+        except Exception:
+            return []
