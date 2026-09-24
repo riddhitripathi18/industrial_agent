@@ -1,0 +1,133 @@
+"""
+train_bearing_model.py
+Predictive Maintenance — Bearing Failure & RUL ML Training Pipeline
+Trains:
+  1. XGBoost classifier for Bearing Degradation Stage (0: Healthy, 1: Degrading Warning, 2: Critical Pre-Failure)
+  2. XGBoost regressor for Remaining Useful Life (RUL in hours)
+"""
+import os
+import pickle
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report, r2_score, mean_absolute_error
+import xgboost as xgb
+
+BASE_DIR = r"c:\Users\riddh\OneDrive\Desktop\predictive_maintenance"
+DATA_PATH = os.path.join(BASE_DIR, "bearings_all_features.csv")
+MODELS_DIR = os.path.join(BASE_DIR, "models")
+os.makedirs(MODELS_DIR, exist_ok=True)
+
+print("Loading Bearing Vibration dataset...")
+df = pd.read_csv(DATA_PATH)
+
+feature_types = [
+    "rms", "peak", "peak_to_peak", "kurtosis", "crest_factor",
+    "std", "skewness", "variance", "mean_abs", "shape_factor", "impulse_factor"
+]
+
+rows = []
+test_max_hours = df.groupby("test_id")["hours_elapsed"].max().to_dict()
+
+for _, row in df.iterrows():
+    test_id = int(row["test_id"])
+    hr = float(row["hours_elapsed"])
+    max_hr = test_max_hours.get(test_id, hr)
+    rul = max(max_hr - hr, 0.0)
+    
+    # Life fraction: 0.0 (new) to 1.0 (failed)
+    life_pct = hr / max_hr if max_hr > 0 else 0.0
+    
+    # 3-stage degradation label:
+    # 0: Healthy (first 75% of life)
+    # 1: Degrading Warning (75% to 92% of life)
+    # 2: Critical Pre-Failure (>92% of life)
+    if life_pct < 0.75:
+        stage = 0
+    elif life_pct < 0.92:
+        stage = 1
+    else:
+        stage = 2
+
+    for b_idx in [1, 2, 3, 4]:
+        b_name = f"Bearing{b_idx}"
+        feat_dict = {
+            "test_id": test_id,
+            "bearing_id": b_name,
+            "hours_elapsed": hr,
+            "RUL": rul,
+            "degradation_stage": stage
+        }
+        has_feats = False
+        
+        for ft in feature_types:
+            col = f"{b_name}_{ft}"
+            if col in row and pd.notna(row[col]):
+                feat_dict[ft] = float(row[col])
+                has_feats = True
+            else:
+                col_x = f"{b_name}_x_{ft}"
+                if col_x in row and pd.notna(row[col_x]):
+                    feat_dict[ft] = float(row[col_x])
+                    has_feats = True
+                else:
+                    feat_dict[ft] = 0.0
+                    
+        if has_feats and feat_dict["rms"] > 0:
+            rows.append(feat_dict)
+
+bearing_df = pd.DataFrame(rows)
+print(f"Extracted {len(bearing_df)} bearing feature observations.")
+
+bearing_df = pd.get_dummies(bearing_df, columns=["bearing_id"], drop_first=False)
+train_feature_cols = [c for c in bearing_df.columns if c not in ["RUL", "degradation_stage"]]
+
+X = bearing_df[train_feature_cols]
+y_clf = bearing_df["degradation_stage"]
+y_reg = bearing_df["RUL"]
+
+X_train, X_test, y_train_clf, y_test_clf, y_train_reg, y_test_reg = train_test_split(
+    X, y_clf, y_reg, test_size=0.2, random_state=42, stratify=y_clf
+)
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+print("Training Bearing Degradation Stage Classifier (XGBoost)...")
+clf = xgb.XGBClassifier(
+    n_estimators=120,
+    max_depth=5,
+    learning_rate=0.08,
+    random_state=42,
+    eval_metric="mlogloss"
+)
+clf.fit(X_train_scaled, y_train_clf)
+y_pred_clf = clf.predict(X_test_scaled)
+print("Classification Report:")
+print(classification_report(y_test_clf, y_pred_clf, target_names=["Healthy (Normal)", "Warning (Degrading)", "Critical (Failure Imminent)"]))
+
+print("Training Bearing RUL Regressor (XGBoost)...")
+reg = xgb.XGBRegressor(
+    n_estimators=150,
+    max_depth=6,
+    learning_rate=0.08,
+    random_state=42
+)
+reg.fit(X_train_scaled, y_train_reg)
+y_pred_reg = reg.predict(X_test_scaled)
+r2 = r2_score(y_test_reg, y_pred_reg)
+mae = mean_absolute_error(y_test_reg, y_pred_reg)
+print(f"Bearing RUL Regressor R^2: {r2:.4f}, MAE: {mae:.2f} hours")
+
+with open(os.path.join(MODELS_DIR, "bearing_stage_classifier.pkl"), "wb") as f:
+    pickle.dump(clf, f)
+with open(os.path.join(MODELS_DIR, "bearing_rul_regressor.pkl"), "wb") as f:
+    pickle.dump(reg, f)
+with open(os.path.join(MODELS_DIR, "bearing_scaler.pkl"), "wb") as f:
+    pickle.dump(scaler, f)
+with open(os.path.join(MODELS_DIR, "bearing_feature_cols.pkl"), "wb") as f:
+    pickle.dump(train_feature_cols, f)
+
+print("Bearing models successfully saved to models/")

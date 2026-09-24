@@ -45,6 +45,8 @@
           <span class="pill-metric">5 HX</span>
           <span class="pill-sep">·</span>
           <span class="pill-metric">3 BEARING CAMPAIGNS</span>
+          <span class="pill-sep">·</span>
+          <span class="pill-metric">10k CNC MILLS</span>
         </div>
         <div class="status-pill status-model">
           <span class="model-tag" id="activeModelTag">GEMINI 2.5 FLASH</span>
@@ -105,6 +107,18 @@
           </div>
         </div>
 
+        <!-- CNC Milling Machines Fleet -->
+        <div class="asset-section">
+          <div class="section-label">
+            <span>CNC MILLING FLEET</span>
+            <span class="section-count">10k UNITS</span>
+          </div>
+          <div class="asset-cards" id="millingAssetCards">
+            <!-- Dynamically populated or skeleton loader -->
+            <div class="asset-skeleton">Loading milling machines...</div>
+          </div>
+        </div>
+
         <!-- Diagnostic Quick Actions -->
         <div class="runbook-section">
           <div class="section-label">QUICK RUNBOOKS</div>
@@ -121,9 +135,13 @@
               <span class="runbook-code">BRG-T2</span>
               <span class="runbook-name">Test 2 Bearing Failure Status</span>
             </button>
-            <button class="runbook-btn" data-query="Explain what ISO 10816 Zone C severity indicates and what immediate actions maintenance crews should execute.">
-              <span class="runbook-code">SOP</span>
-              <span class="runbook-name">ISO Zone C Standard Operating Plan</span>
+            <button class="runbook-btn" data-query="Predict failure probability for CNC Milling Machine #142 and check individual TWF, HDF, PWF, OSF, and RNF failure modes.">
+              <span class="runbook-code">CNC-142</span>
+              <span class="runbook-name">Milling Machine #142 ML Failure</span>
+            </button>
+            <button class="runbook-btn" data-query="Audit the CNC milling fleet for machines with tool wear greater than 200 minutes and identify failure risks.">
+              <span class="runbook-code">CNC-WEAR</span>
+              <span class="runbook-name">High Tool-Wear Machine Audit</span>
             </button>
             <button class="runbook-btn" data-query="Walk me step-by-step through the chemical cleaning procedure for heat exchangers according to the maintenance SOP.">
               <span class="runbook-code">CLEAN</span>
@@ -143,11 +161,11 @@
           <!-- Welcoming Engineering Splash -->
           <div class="system-welcome-card" id="welcomeCard">
             <div class="welcome-header">
-              <div class="welcome-tag">SYSTEM ONLINE · AUTOMATIC FUNCTION CALLING</div>
+              <div class="welcome-tag">SYSTEM ONLINE · 3 MACHINE CLASSES · MULTI-ASSET ML PREDICTOR</div>
               <h2>Industrial Plant Monitoring Agent</h2>
               <p class="welcome-desc">
-                Real-time thermodynamic fouling calculations, NASA bearing vibration diagnostics,
-                ISO 10816 evaluation, and engineering SOP document retrieval.
+                Unified thermodynamic fouling calculations, NASA bearing vibration diagnostics & RUL,
+                CNC milling machine failure predictions, and engineering maintenance SOP retrieval.
               </p>
             </div>
             
@@ -161,6 +179,11 @@
                 <span class="cap-icon">📊</span>
                 <span class="cap-title">Vibration Diagnostics</span>
                 <span class="cap-sub">RMS trend, kurtosis, Remaining Useful Life (RUL), and ISO 10816 classification.</span>
+              </div>
+              <div class="cap-card" data-prompt="Predict failure on CNC Milling Machine 142. Check TWF, HDF, PWF, and OSF failure modes.">
+                <span class="cap-icon">⚙️</span>
+                <span class="cap-title">CNC Milling ML Prediction</span>
+                <span class="cap-sub">Trained XGBoost models for TWF, HDF, PWF, OSF, RNF on 10,000 machines.</span>
               </div>
               <div class="cap-card" data-prompt="What are the mechanical and chemical cleaning procedures for fouled tubes?">
                 <span class="cap-icon">📖</span>

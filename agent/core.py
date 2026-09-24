@@ -66,6 +66,20 @@ from agent.tools.analysis_tools import (
 # Phase 3 — RAG
 from agent.tools.rag_tools import query_knowledge_base as _query_kb
 
+# Milling machine data tools (Predictive Maintenance ai4i2020 dataset)
+from agent.data_tools.milling_data import (
+    get_milling_fleet_overview,
+    get_milling_machine_telemetry,
+    filter_high_risk_milling_machines,
+)
+
+# ML predictive inference tools across 3 machine classes
+from agent.tools.ml_predict_tools import (
+    predict_milling_machine,
+    predict_hx_fouling,
+    predict_bearing_failure,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -78,19 +92,25 @@ def list_equipment() -> dict:
     """
     List all available industrial equipment in the monitoring system.
 
-    Returns a catalog of heat exchangers (E01-E05) and bearing test datasets
-    (Test 1, 2, 3), including fluid types, dataset sizes, and failure info.
+    Returns a catalog of heat exchangers (E01-E05), bearing test datasets
+    (Test 1, 2, 3), and CNC milling machines (ai4i2020 predictive maintenance dataset),
+    including operating parameters, failure info, and dataset sizes.
 
     Call this first if you are unsure what equipment exists.
 
     Returns:
-        dict with keys: heat_exchangers (list), bearing_tests (list).
+        dict with keys: heat_exchangers (list), bearing_tests (list), milling_machines (dict).
     """
     hx_list  = get_available_exchangers()
     brg_list = get_bearing_tests_overview()
+    try:
+        milling_info = get_milling_fleet_overview()
+    except Exception:
+        milling_info = {"total_machines": 10000, "status": "Available in predictive maintenance dataset"}
     return {
-        "heat_exchangers": hx_list,
-        "bearing_tests":   brg_list,
+        "heat_exchangers":  hx_list,
+        "bearing_tests":    brg_list,
+        "milling_machines": milling_info,
     }
 
 
@@ -486,11 +506,66 @@ def _bearing_recommendation(bid, tid, rms, zone, rul, status, n_anom) -> str:
     return " ".join(parts)
 
 
+def analyze_milling_machine(machine_id: int = 142) -> dict:
+    """
+    Analyze operating telemetry and run ML failure mode prediction for a CNC milling machine.
+
+    Queries the 10,000-machine predictive maintenance dataset (ai4i2020) and uses
+    trained XGBoost models to predict overall failure probability and individual failure causes:
+    Tool Wear Failure (TWF), Heat Dissipation Failure (HDF), Power Failure (PWF),
+    Overstrain Failure (OSF), and Random Failure (RNF).
+
+    Args:
+        machine_id: Machine UDI identifier (integer from 1 to 10000).
+
+    Returns:
+        dict with: machine_id, product_id, overall_failure_probability, predicted_failure,
+                  failure_modes (TWF, HDF, PWF, OSF, RNF probabilities), physics metrics,
+                  and maintenance recommendations.
+    """
+    return predict_milling_machine(machine_id=machine_id)
+
+
+def predict_equipment_failure(equipment_type: str, equipment_id: str, test_id: int = 2) -> dict:
+    """
+    Unified ML predictive engine to forecast failure across all 3 machine classes:
+    1. 'milling': Predicts CNC milling machine failure and specific failure modes (TWF, HDF, PWF, OSF, RNF).
+                  Pass equipment_id as machine UDI (e.g. '142').
+    2. 'heat_exchanger': Predicts TEMA fouling limit breach probability and predicted Rf.
+                         Pass equipment_id as 'E01', 'E02', 'E03', 'E04', or 'E05'.
+    3. 'bearing': Predicts ISO vibration degradation stage (Healthy, Warning, Critical) and Remaining Useful Life (RUL) in hours.
+                  Pass equipment_id as 'Bearing1', 'Bearing2', 'Bearing3', or 'Bearing4', and test_id as 1, 2, or 3.
+
+    Args:
+        equipment_type: Asset category ('milling', 'heat_exchanger', or 'bearing').
+        equipment_id: Asset identifier (e.g. '142', 'E02', 'Bearing1').
+        test_id: Test campaign number (1, 2, or 3) for bearing predictions.
+
+    Returns:
+        dict with ML prediction probabilities, health classification, and recommendations.
+    """
+    eq_type = equipment_type.lower()
+    if "mill" in eq_type:
+        try:
+            m_id = int(equipment_id)
+        except (ValueError, TypeError):
+            m_id = 142
+        return predict_milling_machine(machine_id=m_id)
+    elif "heat" in eq_type or "hx" in eq_type or "exchanger" in eq_type:
+        return predict_hx_fouling(exchanger_id=str(equipment_id))
+    elif "bearing" in eq_type:
+        return predict_bearing_failure(test_id=test_id, bearing_id=str(equipment_id))
+    else:
+        return {
+            "error": f"Unknown equipment_type '{equipment_type}'. Please specify 'milling', 'heat_exchanger', or 'bearing'."
+        }
+
+
 # ---------------------------------------------------------------------------
 # Agent Session
 # ---------------------------------------------------------------------------
 
-# All 7 tools the LLM can call
+# All 9 tools the LLM can call across all 3 machine classes
 AGENT_TOOLS = [
     list_equipment,
     get_equipment_snapshot,
@@ -499,6 +574,8 @@ AGENT_TOOLS = [
     analyze_fouling,
     analyze_bearing,
     search_knowledge,
+    analyze_milling_machine,
+    predict_equipment_failure,
 ]
 
 TOOL_MAP = {t.__name__: t for t in AGENT_TOOLS}
@@ -601,6 +678,36 @@ OPENAI_TOOLS = [
                     "n_results": {"type": "integer", "default": 3},
                 },
                 "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "analyze_milling_machine",
+            "description": "Analyze CNC milling machine operating telemetry and predict failure modes (TWF, HDF, PWF, OSF, RNF).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "machine_id": {"type": "integer", "description": "Machine UDI identifier (1 to 10000)"},
+                },
+                "required": ["machine_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "predict_equipment_failure",
+            "description": "Unified ML predictive engine to forecast failure across milling machines, heat exchangers, and bearings.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "equipment_type": {"type": "string", "enum": ["milling", "heat_exchanger", "bearing"]},
+                    "equipment_id": {"type": "string", "description": "Machine ID (e.g. '142', 'E02', 'Bearing1')"},
+                    "test_id": {"type": "integer", "description": "Test ID for bearings (1, 2, or 3)"},
+                },
+                "required": ["equipment_type", "equipment_id"],
             },
         },
     },

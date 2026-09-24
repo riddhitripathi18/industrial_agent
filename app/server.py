@@ -30,7 +30,10 @@ from agent.core import (
     get_equipment_snapshot,
     analyze_fouling,
     analyze_bearing,
+    analyze_milling_machine,
+    predict_equipment_failure,
 )
+from agent.data_tools.milling_data import filter_high_risk_milling_machines, get_milling_fleet_overview
 
 logger = logging.getLogger("ipma.server")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -93,6 +96,12 @@ class ResetResponse(BaseModel):
     message: str
 
 
+class PredictRequest(BaseModel):
+    equipment_type: str = Field(..., description="One of 'milling', 'heat_exchanger', 'bearing'")
+    equipment_id: str = Field(..., description="Equipment identifier (e.g. '142', 'E02', 'Bearing1')")
+    test_id: Optional[int] = Field(2, description="Test ID for bearings (1, 2, or 3)")
+
+
 # ---------------------------------------------------------------------------
 # API Endpoints
 # ---------------------------------------------------------------------------
@@ -119,6 +128,11 @@ async def get_fleet_status():
     try:
         catalog = list_equipment()
         snapshot = get_equipment_snapshot()
+        try:
+            snapshot["milling_machines"] = filter_high_risk_milling_machines(min_tool_wear=200, limit=8)
+        except Exception as e:
+            logger.warning(f"Could not load milling snapshot: {e}")
+            snapshot["milling_machines"] = []
         return {
             "catalog": catalog,
             "snapshot": snapshot,
@@ -150,6 +164,58 @@ async def get_bearing_detail(test_id: int, bearing_id: str):
     try:
         result = analyze_bearing(test_id=test_id, bearing_id=bearing_id)
         return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/equipment/milling/{machine_id}")
+async def get_milling_detail(machine_id: int):
+    """Retrieve CNC milling machine telemetry and ML failure mode prediction."""
+    if machine_id < 1 or machine_id > 10000:
+        raise HTTPException(status_code=404, detail=f"Milling machine UDI {machine_id} out of range (1-10000).")
+    try:
+        result = analyze_milling_machine(machine_id=machine_id)
+        if "error" in result:
+            raise HTTPException(status_code=404, detail=result["error"])
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/predict")
+async def predict_failure_post(req: PredictRequest):
+    """Run unified ML failure forecasting across all 3 machine classes."""
+    try:
+        res = predict_equipment_failure(
+            equipment_type=req.equipment_type,
+            equipment_id=req.equipment_id,
+            test_id=req.test_id or 2,
+        )
+        if "error" in res:
+            raise HTTPException(status_code=400, detail=res["error"])
+        return res
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/predict/{equipment_type}/{equipment_id}")
+async def predict_failure_get(equipment_type: str, equipment_id: str, test_id: int = 2):
+    """GET endpoint for unified ML failure forecasting across all 3 machine classes."""
+    try:
+        res = predict_equipment_failure(
+            equipment_type=equipment_type,
+            equipment_id=equipment_id,
+            test_id=test_id,
+        )
+        if "error" in res:
+            raise HTTPException(status_code=400, detail=res["error"])
+        return res
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

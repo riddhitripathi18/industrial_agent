@@ -39,15 +39,15 @@ from agent.core import (
 
 class TestToolRegistry:
 
-    def test_seven_tools_registered(self):
-        assert len(AGENT_TOOLS) == 7
+    def test_nine_tools_registered(self):
+        assert len(AGENT_TOOLS) == 9
 
     def test_all_tools_are_callable(self):
         for fn in AGENT_TOOLS:
             assert callable(fn)
 
     def test_all_tools_have_docstrings(self):
-        """Gemini uses docstrings to understand when to call each tool."""
+        """LLMs use docstrings to understand when to call each tool."""
         for fn in AGENT_TOOLS:
             assert fn.__doc__ and len(fn.__doc__.strip()) > 20, \
                 f"{fn.__name__} has missing or too-short docstring"
@@ -58,6 +58,7 @@ class TestToolRegistry:
             "list_equipment", "get_equipment_snapshot",
             "get_hx_data", "get_bearing_data",
             "analyze_fouling", "analyze_bearing", "search_knowledge",
+            "analyze_milling_machine", "predict_equipment_failure",
         }
         assert names == expected
 
@@ -319,7 +320,7 @@ class TestOpenAIFallback:
 
     def test_openai_tools_count(self):
         from agent.core import OPENAI_TOOLS
-        assert len(OPENAI_TOOLS) == 7
+        assert len(OPENAI_TOOLS) == 9
 
     def test_openai_tools_valid_schema(self):
         from agent.core import OPENAI_TOOLS, TOOL_MAP
@@ -329,3 +330,37 @@ class TestOpenAIFallback:
             assert fn["name"] in TOOL_MAP
             assert "description" in fn
             assert "parameters" in fn
+
+
+# ===========================================================================
+# 10. Multi-Asset Predictive Maintenance (3 Machine Classes)
+# ===========================================================================
+
+class TestThreeMachinePredictions:
+
+    def test_milling_analysis(self):
+        from agent.core import analyze_milling_machine
+        res = analyze_milling_machine(142)
+        assert res["machine_id"] == 142
+        assert "overall_failure_probability" in res
+        assert "failure_modes" in res
+        assert "TWF" in res["failure_modes"]
+
+    def test_predict_milling(self):
+        from agent.core import predict_equipment_failure
+        res = predict_equipment_failure("milling", "142")
+        assert "overall_failure_probability" in res
+        assert "predicted_failure" in res
+
+    def test_predict_heat_exchanger(self):
+        from agent.core import predict_equipment_failure
+        res = predict_equipment_failure("heat_exchanger", "E02")
+        assert "tema_breach_probability" in res
+        assert "predicted_rf_m2KW" in res
+
+    def test_predict_bearing(self):
+        from agent.core import predict_equipment_failure
+        res = predict_equipment_failure("bearing", "Bearing1", test_id=2)
+        assert "degradation_stage" in res
+        assert "predicted_rul_hours" in res
+

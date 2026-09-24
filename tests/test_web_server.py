@@ -70,6 +70,44 @@ class TestWebServerEndpoints:
         response = client.get("/api/equipment/bearing/99/Bearing1")
         assert response.status_code == 404
 
+    def test_milling_detail_endpoint(self, client):
+        """GET /api/equipment/milling/142 should return machine telemetry and prediction."""
+        response = client.get("/api/equipment/milling/142")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["machine_id"] == 142
+        assert "failure_modes" in data
+        assert "TWF" in data["failure_modes"]
+        assert "predicted_failure" in data
+
+    def test_milling_detail_invalid(self, client):
+        """GET /api/equipment/milling/99999 should return 404."""
+        response = client.get("/api/equipment/milling/99999")
+        assert response.status_code == 404
+
+    def test_predict_endpoints(self, client):
+        """POST and GET /api/predict for all three machine classes."""
+        # 1. Milling
+        res_m = client.post("/api/predict", json={"equipment_type": "milling", "equipment_id": "142"})
+        assert res_m.status_code == 200
+        assert "overall_failure_probability" in res_m.json()
+
+        # 2. Heat Exchanger
+        res_hx = client.post("/api/predict", json={"equipment_type": "heat_exchanger", "equipment_id": "E02"})
+        assert res_hx.status_code == 200
+        assert "tema_breach_probability" in res_hx.json()
+
+        # 3. Bearing
+        res_b = client.post("/api/predict", json={"equipment_type": "bearing", "equipment_id": "Bearing1", "test_id": 2})
+        assert res_b.status_code == 200
+        assert "degradation_stage" in res_b.json()
+        assert "predicted_rul_hours" in res_b.json()
+
+        # 4. GET endpoint
+        res_get = client.get("/api/predict/milling/142")
+        assert res_get.status_code == 200
+        assert res_get.json()["machine_id"] == 142
+
     def test_chat_endpoint_mocked(self, client):
         """POST /api/chat should invoke agent.ask and return response."""
         mock_agent = MagicMock()

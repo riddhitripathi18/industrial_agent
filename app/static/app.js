@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const refreshFleetBtn = document.getElementById("refreshFleetBtn");
   const hxAssetCards = document.getElementById("hxAssetCards");
   const bearingAssetCards = document.getElementById("bearingAssetCards");
+  const millingAssetCards = document.getElementById("millingAssetCards");
   const telemetryTimestamp = document.getElementById("telemetryTimestamp");
   const activeModelTag = document.getElementById("activeModelTag");
 
@@ -64,6 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const snap = data.snapshot || {};
     const hxSnap = snap.heat_exchangers || [];
     const brgSnap = snap.bearing_tests || {};
+    const millingSnap = snap.milling_machines || [];
 
     // Render Heat Exchangers
     if (hxSnap.length > 0) {
@@ -119,15 +121,55 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
     }).join("");
 
-    // Attach click listeners to cards to populate chat
+    // Render CNC Milling Machines (High-wear & sample units)
+    if (millingAssetCards) {
+      if (millingSnap.length > 0) {
+        millingAssetCards.innerHTML = millingSnap.slice(0, 5).map(m => {
+          const isFail = m.failure_recorded;
+          const tagClass = isFail ? "tag-danger" : (m.tool_wear_min >= 210 ? "tag-warning" : "tag-clean");
+          const tagLabel = isFail ? "FAIL" : `${m.tool_wear_min}m`;
+
+          return `
+            <div class="asset-card" data-asset-type="milling" data-milling-id="${m.udi}">
+              <div class="asset-header">
+                <span class="asset-id">UDI #${m.udi} (${m.type})</span>
+                <span class="asset-tag ${tagClass}">${tagLabel}</span>
+              </div>
+              <div class="asset-metrics">
+                <span>Wear: ${m.tool_wear_min} min</span>
+                <span>Torque: ${m.torque_Nm} Nm</span>
+              </div>
+            </div>
+          `;
+        }).join("");
+      } else {
+        millingAssetCards.innerHTML = `
+          <div class="asset-card" data-asset-type="milling" data-milling-id="142">
+            <div class="asset-header">
+              <span class="asset-id">UDI #142 (L)</span>
+              <span class="asset-tag tag-warning">INSPECT</span>
+            </div>
+            <div class="asset-metrics">
+              <span>Wear: 202 min</span>
+              <span>Speed: 1551 rpm</span>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Attach click listeners to all cards to populate chat
     document.querySelectorAll(".asset-card").forEach(card => {
       card.addEventListener("click", () => {
         const hxId = card.getAttribute("data-asset-id");
         const testId = card.getAttribute("data-test-id");
+        const millingId = card.getAttribute("data-milling-id");
         if (hxId) {
           submitQuery(`Perform a comprehensive fouling and thermal efficiency analysis for Heat Exchanger ${hxId}. What is its energy penalty and cleaning recommendation?`);
         } else if (testId) {
           submitQuery(`Analyze Bearing Test ${testId}. Which bearing is at highest risk, what is its ISO 10816 severity zone, and what is the estimated RUL?`);
+        } else if (millingId) {
+          submitQuery(`Predict failure probability for CNC Milling Machine #${millingId}. Check Tool Wear Failure, Heat Dissipation, and Power Failure probabilities.`);
         }
       });
     });
@@ -146,6 +188,14 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="asset-metrics"><span>NASA Run-to-Failure</span></div>
       </div>
     `;
+    if (millingAssetCards) {
+      millingAssetCards.innerHTML = `
+        <div class="asset-card" data-milling-id="142">
+          <div class="asset-header"><span class="asset-id">UDI #142</span><span class="asset-tag tag-warning">READY</span></div>
+          <div class="asset-metrics"><span>10k Fleet</span><span>XGBoost ML</span></div>
+        </div>
+      `;
+    }
   }
 
   // -------------------------------------------------------------------------
