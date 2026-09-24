@@ -501,6 +501,111 @@ AGENT_TOOLS = [
     search_knowledge,
 ]
 
+TOOL_MAP = {t.__name__: t for t in AGENT_TOOLS}
+
+OPENAI_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "list_equipment",
+            "description": "List all available industrial equipment (E01-E05 and Bearing Tests 1, 2, 3).",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_equipment_snapshot",
+            "description": "Get real-time status snapshot of all heat exchangers and bearings.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_hx_data",
+            "description": "Fetch telemetry time-series measurements for a heat exchanger (E01-E05).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "exchanger_id": {"type": "string", "enum": ["E01", "E02", "E03", "E04", "E05"]},
+                    "start_hour": {"type": "number", "description": "Start hour of analysis window"},
+                    "end_hour": {"type": "number", "description": "End hour of analysis window"},
+                    "sample_step": {"type": "integer", "description": "Sample downsampling step (default 10)"},
+                },
+                "required": ["exchanger_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_bearing_data",
+            "description": "Fetch vibration telemetry for a NASA bearing (Test 1, 2, or 3).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "test_id": {"type": "integer", "enum": [1, 2, 3]},
+                    "bearing_id": {"type": "string"},
+                    "start_hour": {"type": "number"},
+                    "end_hour": {"type": "number"},
+                    "sample_step": {"type": "integer"},
+                },
+                "required": ["test_id", "bearing_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "analyze_fouling",
+            "description": "Full thermodynamic fouling calculation for a heat exchanger (Rf, energy loss in USD, TEMA limit).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "exchanger_id": {"type": "string", "enum": ["E01", "E02", "E03", "E04", "E05"]},
+                    "fuel_price_per_mmbtu": {"type": "number", "default": 12.0},
+                    "start_hour": {"type": "number"},
+                    "end_hour": {"type": "number"},
+                },
+                "required": ["exchanger_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "analyze_bearing",
+            "description": "Full vibration health analysis for a bearing (RUL, ISO 10816 zone, trend, anomalies).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "test_id": {"type": "integer", "enum": [1, 2, 3]},
+                    "bearing_id": {"type": "string"},
+                    "metric": {"type": "string", "default": "rms"},
+                },
+                "required": ["test_id", "bearing_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_knowledge",
+            "description": "Search engineering SOP manuals, ISO standards, and bearing failure catalogs via RAG.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Search query keywords"},
+                    "source": {"type": "string", "description": "Optional filter for source"},
+                    "n_results": {"type": "integer", "default": 3},
+                },
+                "required": ["query"],
+            },
+        },
+    },
+]
+
 
 class IndustrialAgent:
     """
@@ -527,6 +632,7 @@ class IndustrialAgent:
 
         self.model_name = model_name or os.environ.get("LLM_MODEL", "gemini-3.5-flash-lite")
         self.verbose    = verbose
+        self._openai_messages = []
 
         # Initialize client
         self.client = genai.Client(api_key=api_key)
@@ -549,6 +655,83 @@ class IndustrialAgent:
         if self.verbose:
             logger.info(f"Agent initialized: {self.model_name}, {len(AGENT_TOOLS)} tools registered")
 
+    def _ask_openai(self, message: str) -> str:
+        """
+        Fallback execution using OpenAI GPT models with function calling.
+        Activated automatically when Google Gemini quota is exhausted.
+        """
+        api_key = os.environ.get("OPENAI_API_KEY", "")
+        if not api_key or "your_openai_api_key" in api_key:
+            return (
+                "⚠️ **Google Gemini quota reached, and OPENAI_API_KEY is not configured.**\n\n"
+                "Please add a funded `OPENAI_API_KEY` to your `.env` file to enable automatic fallback."
+            )
+
+        try:
+            from openai import OpenAI
+            oai_client = OpenAI(api_key=api_key)
+            oai_model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+
+            if not getattr(self, "_openai_messages", None):
+                self._openai_messages = [
+                    {"role": "system", "content": SYSTEM_PROMPT}
+                ]
+
+            self._openai_messages.append({"role": "user", "content": message})
+
+            # Run agent tool-calling loop (up to 8 turns)
+            for _ in range(8):
+                res = oai_client.chat.completions.create(
+                    model=oai_model,
+                    messages=self._openai_messages,
+                    tools=OPENAI_TOOLS,
+                    tool_choice="auto",
+                )
+                choice_msg = res.choices[0].message
+                self._openai_messages.append(choice_msg)
+
+                # If no tool calls requested, we have the final synthesized answer
+                if not choice_msg.tool_calls:
+                    return choice_msg.content or ""
+
+                # Execute all requested tools and feed results back
+                for call in choice_msg.tool_calls:
+                    fn_name = call.function.name
+                    raw_args = call.function.arguments or "{}"
+                    try:
+                        args = json.loads(raw_args)
+                    except Exception:
+                        args = {}
+
+                    fn = TOOL_MAP.get(fn_name)
+                    if fn:
+                        try:
+                            result = fn(**args)
+                        except Exception as fn_err:
+                            result = {"error": str(fn_err)}
+                    else:
+                        result = {"error": f"Tool '{fn_name}' not found in registry"}
+
+                    self._openai_messages.append({
+                        "role": "tool",
+                        "tool_call_id": call.id,
+                        "content": json.dumps(result, default=str),
+                    })
+
+            last_content = self._openai_messages[-1].content if hasattr(self._openai_messages[-1], "content") else ""
+            return last_content or "OpenAI agent completed diagnostic investigation."
+
+        except Exception as oai_err:
+            err_msg = str(oai_err)
+            if "insufficient_quota" in err_msg or "credit_balance_exhausted" in err_msg:
+                return (
+                    "⚠️ **Google Gemini quota was reached, and OpenAI fallback has no credits remaining.**\n\n"
+                    "- **Google Gemini**: Rate limit / quota reached.\n"
+                    "- **OpenAI**: `credit_balance_exhausted` (Add credits at [platform.openai.com/settings/organization/billing](https://platform.openai.com/settings/organization/billing)).\n\n"
+                    "👉 *Please wait ~20 seconds for the free Google Gemini quota to refresh.*"
+                )
+            return f"OpenAI fallback error: {oai_err}"
+
     def ask(self, message: str, max_retries: int = 2) -> str:
         """
         Send a message to the agent and return the text response.
@@ -560,6 +743,9 @@ class IndustrialAgent:
           4. Sends results back to Gemini
           5. Returns the final synthesized answer
 
+        If Google Gemini hits rate limits or quota exhaustion, it automatically
+        falls back to OpenAI (if configured).
+
         Args:
             message: Natural language question or command.
             max_retries: Times to retry if a transient 429 rate limit is received.
@@ -567,6 +753,9 @@ class IndustrialAgent:
         Returns:
             Agent's text response as a string.
         """
+        if os.environ.get("LLM_BACKEND") == "openai":
+            return self._ask_openai(message)
+
         t0 = time.perf_counter()
         for attempt in range(max_retries + 1):
             try:
@@ -599,11 +788,17 @@ class IndustrialAgent:
                         time.sleep(delay + 1.0)
                         continue
 
+                    # If retries exhausted, check if OpenAI is available as automatic fallback
+                    openai_key = os.environ.get("OPENAI_API_KEY", "")
+                    if openai_key and openai_key != "your_openai_api_key_here":
+                        logger.info("Google Gemini quota exhausted. Activating OpenAI fallback...")
+                        return self._ask_openai(message)
+
                     return (
                         f"⏳ **Gemini Free Tier Rate Limit**\n\n"
                         f"The free Gemini tier permits a limited number of requests per minute.\n\n"
                         f"👉 **Please wait ~{int(delay)} seconds and try your question again.**\n\n"
-                        f"*Tip: If you'd like unlimited throughput, you can enable pay-as-you-go billing in Google AI Studio.*"
+                        f"*Tip: If you'd like unlimited throughput, you can enable pay-as-you-go billing in Google AI Studio or add credits to OpenAI.*"
                     )
                 return f"Agent error: {e}"
 
@@ -613,6 +808,7 @@ class IndustrialAgent:
             model=self.model_name,
             config=self._afc_config,
         )
+        self._openai_messages = []
 
     @property
     def history(self) -> list:

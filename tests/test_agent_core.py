@@ -309,3 +309,23 @@ class TestSearchKnowledge:
     def test_json_serializable(self):
         result = search_knowledge("bearing outer race failure")
         json.dumps(result)
+
+
+# ===========================================================================
+# 9. OpenAI Fallback & Tools Schema
+# ===========================================================================
+
+class TestOpenAIFallback:
+
+    def test_openai_tools_count(self):
+        from agent.core import OPENAI_TOOLS
+        assert len(OPENAI_TOOLS) == 7
+
+    def test_openai_tools_valid_schema(self):
+        from agent.core import OPENAI_TOOLS, TOOL_MAP
+        for tool in OPENAI_TOOLS:
+            assert tool["type"] == "function"
+            fn = tool["function"]
+            assert fn["name"] in TOOL_MAP
+            assert "description" in fn
+            assert "parameters" in fn
