@@ -13,14 +13,20 @@ import os
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-# Add predictive_maintenance to path for UnifiedPredictor
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+SCRIPTS_DIR = PROJECT_ROOT / "scripts"
+LOCAL_MODELS_DIR = PROJECT_ROOT / "models"
+if str(SCRIPTS_DIR) not in sys.path and SCRIPTS_DIR.exists():
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
 PRED_REPO_PATH = Path(r"c:\Users\riddh\OneDrive\Desktop\predictive_maintenance")
 if str(PRED_REPO_PATH) not in sys.path and PRED_REPO_PATH.exists():
     sys.path.insert(0, str(PRED_REPO_PATH))
 
 try:
     from unified_predictor import UnifiedPredictor
-    _predictor = UnifiedPredictor(str(PRED_REPO_PATH / "models"))
+    target_models = str(LOCAL_MODELS_DIR) if LOCAL_MODELS_DIR.exists() else str(PRED_REPO_PATH / "models")
+    _predictor = UnifiedPredictor(target_models)
 except Exception as e:
     _predictor = None
 

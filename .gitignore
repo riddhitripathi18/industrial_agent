@@ -1,5 +1,6 @@
 # Large datasets - too big for GitHub (use Git LFS or cloud storage)
 *.csv
+!data/ai4i2020.csv
 bearings_dataset/
 data/rag_index/
 

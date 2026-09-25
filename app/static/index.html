@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IPMA — Industrial Plant Monitoring Agent</title>
-  <meta name="description" content="Minimalist, real-time industrial plant telemetry, fouling diagnostics, and vibration analysis platform.">
+  <title>IPMA — Industrial Plant Monitoring Agent & Digital Twin SCADA</title>
+  <meta name="description" content="Unified Industrial Plant SCADA Dashboard, Multi-Asset Digital Twins, and AI Diagnostic Agent.">
   
   <!-- Modern Industrial Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <!-- Markdown Renderer & Sanitizer -->
+  <!-- Markdown Renderer -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   
   <link rel="stylesheet" href="/static/style.css">
@@ -19,7 +19,7 @@
 <body>
   <div class="app-layout">
     
-    <!-- Top Navigation Bar -->
+    <!-- Top SCADA Header Bar -->
     <header class="top-nav">
       <div class="brand-group">
         <div class="brand-symbol">
@@ -31,22 +31,37 @@
           </svg>
         </div>
         <div class="brand-title">
-          <span class="brand-name">IPMA</span>
-          <span class="brand-sub">PLANT TELEMETRY & DIAGNOSTICS</span>
+          <span class="brand-name">INDUSTRIAL AGENT</span>
+          <span class="brand-sub">SCADA CONTROL &amp; DIGITAL TWIN SUITE</span>
         </div>
       </div>
 
+      <!-- Navigation Tabs -->
+      <nav class="main-nav-tabs">
+        <button class="nav-tab-btn active" data-tab="fleetTab">
+          <span class="tab-icon">🌐</span>
+          <span>Fleet Overview</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="simulatorTab">
+          <span class="tab-icon">🧪</span>
+          <span>Digital Simulators</span>
+          <span class="tab-badge">3 Twins</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="predictorTab">
+          <span class="tab-icon">⚡</span>
+          <span>ML Predictor</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="agentTab">
+          <span class="tab-icon">🤖</span>
+          <span>AI Agent Console</span>
+          <span class="pulse-indicator-small"></span>
+        </button>
+      </nav>
+
       <div class="header-status-group">
-        <div class="status-pill status-live">
+        <div class="status-pill status-live" title="Real-time telemetry sync active">
           <span class="pulse-indicator"></span>
-          <span class="status-text">FLEET LIVE</span>
-        </div>
-        <div class="status-pill status-fleet">
-          <span class="pill-metric">5 HX</span>
-          <span class="pill-sep">·</span>
-          <span class="pill-metric">3 BEARING CAMPAIGNS</span>
-          <span class="pill-sep">·</span>
-          <span class="pill-metric">10k CNC MILLS</span>
+          <span class="status-text">SYSTEM ONLINE</span>
         </div>
         <div class="status-pill status-model">
           <span class="model-tag" id="activeModelTag">GEMINI 2.5 FLASH</span>
@@ -54,184 +69,850 @@
       </div>
 
       <div class="header-actions">
-        <button id="refreshFleetBtn" class="btn-icon" title="Refresh Fleet Data">
+        <button id="refreshFleetBtn" class="btn-icon" title="Refresh Live Plant Data">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="23 4 23 10 17 10"></polyline>
             <polyline points="1 20 1 14 7 14"></polyline>
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
           </svg>
-          <span>Refresh</span>
+          <span>Sync</span>
         </button>
-        <button id="resetSessionBtn" class="btn-outline" title="Clear conversation history">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-            <path d="M3 3v5h5"></path>
-          </svg>
-          <span>New Session</span>
+        <button id="toggleCopilotBtn" class="btn-accent" title="Open AI Copilot Drawer">
+          <span>🤖 Copilot</span>
         </button>
       </div>
     </header>
 
+    <!-- Quick Runbooks Ribbon -->
+    <div class="quick-runbooks-bar">
+      <div class="runbook-label">QUICK DIAGNOSTIC RUNBOOKS:</div>
+      <div class="runbook-chips">
+        <button class="runbook-chip" data-query="Give me a comprehensive status overview of all plant equipment, highlighting any units at risk.">
+          <span class="chip-code">AUDIT</span> Full Plant Audit
+        </button>
+        <button class="runbook-chip" data-query="Analyze Heat Exchanger E02. Calculate its fouling resistance, energy penalty, and annual financial loss.">
+          <span class="chip-code">HX-E02</span> E02 Fouling &amp; Loss
+        </button>
+        <button class="runbook-chip" data-query="Which bearing in Test 2 failed? What was its failure mode and final ISO vibration severity?">
+          <span class="chip-code">BRG-T2</span> Test 2 Bearing Status
+        </button>
+        <button class="runbook-chip" data-query="Predict failure probability for CNC Milling Machine #142 and check individual TWF, HDF, PWF, OSF, and RNF failure modes.">
+          <span class="chip-code">CNC-142</span> Machine #142 Forecast
+        </button>
+        <button class="runbook-chip" data-query="Audit the CNC milling fleet for machines with tool wear greater than 200 minutes and identify failure risks.">
+          <span class="chip-code">WEAR</span> High-Wear Audit
+        </button>
+        <button class="runbook-chip" data-query="Walk me step-by-step through the chemical cleaning procedure for heat exchangers according to the maintenance SOP.">
+          <span class="chip-code">SOP</span> Cleaning Procedure
+        </button>
+      </div>
+    </div>
+
     <!-- Main Workspace Container -->
-    <div class="workspace-body">
+    <main class="workspace-main">
       
-      <!-- Left Sidebar: Real-time Telemetry & Asset Status -->
-      <aside class="sidebar" id="telemetrySidebar">
+      <!-- ================================================================= -->
+      <!-- TAB 1: FLEET SCADA OVERVIEW -->
+      <!-- ================================================================= -->
+      <section id="fleetTab" class="view-panel active">
+        <!-- Top Metrics KPIs -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-title">TOTAL MONITORED ASSETS</div>
+            <div class="kpi-value" id="kpiTotalAssets">10,008</div>
+            <div class="kpi-sub">5 Heat Exchangers · 3 Bearing Sets · 10k Mills</div>
+            <div class="kpi-status-bar status-ok"></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">HX PREHEAT TRAIN STATUS</div>
+            <div class="kpi-value warning-text" id="kpiHxStatus">1 ALERT</div>
+            <div class="kpi-sub">E02 TEMA Breach Risk · $424,548 Est. Loss</div>
+            <div class="kpi-status-bar status-warn"></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">ROTATING MACHINERY HEALTH</div>
+            <div class="kpi-value ok-text" id="kpiBrgStatus">3 CAMPAIGNS</div>
+            <div class="kpi-sub">12 Accelerometer Channels · Run-to-Failure</div>
+            <div class="kpi-status-bar status-ok"></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">CNC MILLING FLEET RISK</div>
+            <div class="kpi-value alert-text" id="kpiMillingRisk">8 HIGH WEAR</div>
+            <div class="kpi-sub">Tool Wear &gt; 200m · Replacement Advised</div>
+            <div class="kpi-status-bar status-alert"></div>
+          </div>
+        </div>
+
+        <div class="fleet-content-grid">
+          <!-- Left Column: Heat Exchangers & Bearings -->
+          <div class="fleet-col">
+            <!-- Heat Exchangers Section -->
+            <div class="card-panel">
+              <div class="panel-header">
+                <div class="panel-title-group">
+                  <span class="panel-icon">⚡</span>
+                  <h3>SHELL &amp; TUBE HEAT EXCHANGER TRAIN (E01–E05)</h3>
+                </div>
+                <button class="panel-action-btn" id="openHxSimBtn">Launch HX Simulator &rarr;</button>
+              </div>
+              <div class="hx-fleet-grid" id="hxFleetContainer">
+                <div class="asset-skeleton">Loading heat exchanger telemetry...</div>
+              </div>
+            </div>
+
+            <!-- Bearing Accelerometers Section -->
+            <div class="card-panel">
+              <div class="panel-header">
+                <div class="panel-title-group">
+                  <span class="panel-icon">📊</span>
+                  <h3>ROTATING BEARING RUN-TO-FAILURE CAMPAIGNS</h3>
+                </div>
+                <button class="panel-action-btn" id="openBearingSimBtn">Launch Bearing Simulator &rarr;</button>
+              </div>
+              <div class="bearing-fleet-grid" id="bearingFleetContainer">
+                <div class="asset-skeleton">Loading bearing vibration telemetry...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: CNC Milling Fleet High Risk Units -->
+          <div class="fleet-col-sidebar">
+            <div class="card-panel">
+              <div class="panel-header">
+                <div class="panel-title-group">
+                  <span class="panel-icon">⚙️</span>
+                  <h3>CNC MILLING FLEET MONITOR</h3>
+                </div>
+                <button class="panel-action-btn" id="openMillingSimBtn">Launch Milling Simulator &rarr;</button>
+              </div>
+              <div class="milling-filter-bar">
+                <span class="filter-label">High-Wear Monitored Units:</span>
+                <span class="filter-count">8 Flagged</span>
+              </div>
+              <div class="milling-fleet-list" id="millingFleetContainer">
+                <div class="asset-skeleton">Loading CNC machine telemetry...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- TAB 2: DIGITAL SIMULATORS (ALL 3 MACHINES) -->
+      <!-- ================================================================= -->
+      <section id="simulatorTab" class="view-panel">
         
-        <div class="sidebar-header">
-          <span class="sidebar-title">PLANT ASSETS</span>
-          <span class="telemetry-badge" id="telemetryTimestamp">SYNCED</span>
-        </div>
-
-        <!-- Heat Exchangers Status List -->
-        <div class="asset-section">
-          <div class="section-label">
-            <span>HEAT EXCHANGERS</span>
-            <span class="section-count">5 UNITS</span>
-          </div>
-          <div class="asset-cards" id="hxAssetCards">
-            <!-- Dynamically populated or skeleton loader -->
-            <div class="asset-skeleton">Loading telemetry...</div>
-          </div>
-        </div>
-
-        <!-- Rotating Machinery / Bearing Test Sets -->
-        <div class="asset-section">
-          <div class="section-label">
-            <span>BEARING ACCELEROMETERS</span>
-            <span class="section-count">3 TEST CAMPAIGNS</span>
-          </div>
-          <div class="asset-cards" id="bearingAssetCards">
-            <!-- Dynamically populated or skeleton loader -->
-            <div class="asset-skeleton">Loading vibration...</div>
-          </div>
-        </div>
-
-        <!-- CNC Milling Machines Fleet -->
-        <div class="asset-section">
-          <div class="section-label">
-            <span>CNC MILLING FLEET</span>
-            <span class="section-count">10k UNITS</span>
-          </div>
-          <div class="asset-cards" id="millingAssetCards">
-            <!-- Dynamically populated or skeleton loader -->
-            <div class="asset-skeleton">Loading milling machines...</div>
-          </div>
-        </div>
-
-        <!-- Diagnostic Quick Actions -->
-        <div class="runbook-section">
-          <div class="section-label">QUICK RUNBOOKS</div>
-          <div class="runbook-list">
-            <button class="runbook-btn" data-query="Give me a comprehensive status overview of all plant equipment, highlighting any units at risk.">
-              <span class="runbook-code">AUDIT</span>
-              <span class="runbook-name">Full Fleet Status Overview</span>
+        <!-- Machine Twin Switcher -->
+        <div class="twin-switcher-bar">
+          <div class="switcher-label">SELECT DIGITAL TWIN SIMULATOR:</div>
+          <div class="switcher-buttons">
+            <button class="twin-switch-btn active" data-twin="hxTwin">
+              <span>⚡ Shell &amp; Tube Heat Exchanger</span>
             </button>
-            <button class="runbook-btn" data-query="Is Heat Exchanger E02 fouling? Calculate its fouling resistance, energy penalty, and annual financial loss.">
-              <span class="runbook-code">HX-E02</span>
-              <span class="runbook-name">E02 Fouling & Energy Loss</span>
+            <button class="twin-switch-btn" data-twin="bearingTwin">
+              <span>📊 IMS Rotating Bearing</span>
             </button>
-            <button class="runbook-btn" data-query="Which bearing in Test 2 failed? What was its failure mode and final ISO vibration severity?">
-              <span class="runbook-code">BRG-T2</span>
-              <span class="runbook-name">Test 2 Bearing Failure Status</span>
-            </button>
-            <button class="runbook-btn" data-query="Predict failure probability for CNC Milling Machine #142 and check individual TWF, HDF, PWF, OSF, and RNF failure modes.">
-              <span class="runbook-code">CNC-142</span>
-              <span class="runbook-name">Milling Machine #142 ML Failure</span>
-            </button>
-            <button class="runbook-btn" data-query="Audit the CNC milling fleet for machines with tool wear greater than 200 minutes and identify failure risks.">
-              <span class="runbook-code">CNC-WEAR</span>
-              <span class="runbook-name">High Tool-Wear Machine Audit</span>
-            </button>
-            <button class="runbook-btn" data-query="Walk me step-by-step through the chemical cleaning procedure for heat exchangers according to the maintenance SOP.">
-              <span class="runbook-code">CLEAN</span>
-              <span class="runbook-name">Chemical Cleaning SOP</span>
+            <button class="twin-switch-btn" data-twin="millingTwin">
+              <span>⚙️ CNC Milling Machine</span>
             </button>
           </div>
         </div>
 
-      </aside>
+        <!-- --------------------------------------------------------------- -->
+        <!-- TWIN 1: Shell & Tube Heat Exchanger Digital Twin -->
+        <!-- --------------------------------------------------------------- -->
+        <div id="hxTwin" class="twin-container active">
+          <div class="twin-grid">
+            
+            <!-- Controls & Sliders Column -->
+            <div class="twin-controls-card">
+              <div class="twin-card-header">
+                <h3>OPERATIONAL CONTROL TELEMETRY</h3>
+                <div class="preset-group">
+                  <label for="hxPresetSelect">Select Unit:</label>
+                  <select id="hxPresetSelect" class="form-select">
+                    <option value="E01">E01 — Heavy Naphtha</option>
+                    <option value="E02" selected>E02 — Kerosene (Fouling Alert)</option>
+                    <option value="E03">E03 — Light Diesel</option>
+                    <option value="E04">E04 — LVGO</option>
+                    <option value="E05">E05 — Heavy Diesel</option>
+                  </select>
+                </div>
+              </div>
 
-      <!-- Main Diagnostics Canvas & Chat Stream -->
-      <main class="chat-viewport">
-        
-        <!-- Conversation Feed -->
-        <div class="messages-container" id="messagesContainer">
+              <!-- Interactive Controls -->
+              <div class="control-group">
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Tube Crude Inlet Temp (T_in)</label>
+                    <span class="slider-val" id="hxTubeInVal">194.7 °C</span>
+                  </div>
+                  <input type="range" id="hxTubeIn" min="100" max="300" step="0.5" value="194.7" class="slider-range">
+                </div>
+
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Tube Crude Outlet Temp (T_out)</label>
+                    <span class="slider-val" id="hxTubeOutVal">234.6 °C</span>
+                  </div>
+                  <input type="range" id="hxTubeOut" min="100" max="300" step="0.5" value="234.6" class="slider-range">
+                </div>
+
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Crude Mass Flow Rate (m_tube)</label>
+                    <span class="slider-val" id="hxTubeFlowVal">103.2 kg/s</span>
+                  </div>
+                  <input type="range" id="hxTubeFlow" min="20" max="150" step="1" value="103.2" class="slider-range">
+                </div>
+
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Shell Fluid Inlet Temp (S_in)</label>
+                    <span class="slider-val" id="hxShellInVal">280.6 °C</span>
+                  </div>
+                  <input type="range" id="hxShellIn" min="120" max="350" step="0.5" value="280.6" class="slider-range">
+                </div>
+
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Shell Fluid Outlet Temp (S_out)</label>
+                    <span class="slider-val" id="hxShellOutVal">229.1 °C</span>
+                  </div>
+                  <input type="range" id="hxShellOut" min="120" max="350" step="0.5" value="229.1" class="slider-range">
+                </div>
+
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Shell Fluid Mass Flow (m_shell)</label>
+                    <span class="slider-val" id="hxShellFlowVal">84.6 kg/s</span>
+                  </div>
+                  <input type="range" id="hxShellFlow" min="20" max="150" step="1" value="84.6" class="slider-range">
+                </div>
+
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Cumulative Runtime Hours</label>
+                    <span class="slider-val" id="hxRuntimeVal">1,000 hrs</span>
+                  </div>
+                  <input type="range" id="hxRuntime" min="50" max="64000" step="100" value="1000" class="slider-range">
+                </div>
+
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Crude TAN (Total Acid Number)</label>
+                    <span class="slider-val" id="hxTanVal">0.80 mg KOH/g</span>
+                  </div>
+                  <input type="range" id="hxTan" min="0.1" max="3.0" step="0.05" value="0.80" class="slider-range">
+                </div>
+              </div>
+
+              <div class="twin-control-actions">
+                <button id="hxResetParamsBtn" class="btn-outline">Reset to Nominal</button>
+                <button id="hxAskAgentBtn" class="btn-accent">🤖 Diagnose with AI Agent</button>
+              </div>
+            </div>
+
+            <!-- Telemetry & Physics Digital Twin Results -->
+            <div class="twin-results-card">
+              <div class="twin-card-header">
+                <h3>THERMODYNAMIC DIGITAL TWIN &amp; TEMA FOULING</h3>
+                <span class="status-badge" id="hxStatusBadge">OPERATING NORMAL</span>
+              </div>
+
+              <!-- Main Gauge Dial and Primary KPIs -->
+              <div class="twin-primary-display">
+                <div class="dial-container">
+                  <svg class="circular-dial" viewBox="0 0 140 140">
+                    <circle class="dial-track" cx="70" cy="70" r="58"></circle>
+                    <circle class="dial-fill" id="hxDialFill" cx="70" cy="70" r="58" stroke-dasharray="364.4" stroke-dashoffset="364.4"></circle>
+                  </svg>
+                  <div class="dial-content">
+                    <span class="dial-number" id="hxTemaPct">0%</span>
+                    <span class="dial-caption">TEMA LIMIT</span>
+                  </div>
+                </div>
+
+                <div class="twin-kpis-column">
+                  <div class="twin-stat-box">
+                    <span class="stat-box-label">Fouling Resistance (Rf)</span>
+                    <span class="stat-box-val" id="hxRfVal">0.000002 m²·K/W</span>
+                    <span class="stat-box-ref">TEMA Limit: 0.000500 m²·K/W</span>
+                  </div>
+                  <div class="twin-stat-box">
+                    <span class="stat-box-label">Clean vs Actual U</span>
+                    <span class="stat-box-val" id="hxUVal">1,309 &rarr; 1,305 W/m²·K</span>
+                    <span class="stat-box-ref" id="hxUDeg">Degradation: -0.3%</span>
+                  </div>
+                  <div class="twin-stat-box">
+                    <span class="stat-box-label">Thermal Duty (Q)</span>
+                    <span class="stat-box-val" id="hxDutyVal">8,662 kW</span>
+                    <span class="stat-box-ref" id="hxLmtdVal">LMTD: 25.4 °C</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Economic Impact & Cleaning Urgency -->
+              <div class="twin-penalty-grid">
+                <div class="penalty-box">
+                  <span class="penalty-title">ESTIMATED ANNUAL THERMAL LOSS</span>
+                  <span class="penalty-val" id="hxAnnualPenalty">$0 / yr</span>
+                  <span class="penalty-sub">Fuel Rate: $12.00 / MMBtu</span>
+                </div>
+                <div class="penalty-box">
+                  <span class="penalty-title">TIME TO REQUIRED CLEANING</span>
+                  <span class="penalty-val ok-text" id="hxDaysToClean">182.4 Days</span>
+                  <span class="penalty-sub" id="hxUrgency">Nominal condition monitoring</span>
+                </div>
+              </div>
+
+              <!-- Thermal Profile SVG Visualizer -->
+              <div class="svg-visualizer-card">
+                <div class="visualizer-header">
+                  <span>EXCHANGER THERMAL GRADIENT &amp; FOULING PROFILE</span>
+                  <span class="mono-label">Crude (Tube) vs Product (Shell)</span>
+                </div>
+                <svg id="hxThermalSvg" class="thermal-profile-svg" viewBox="0 0 450 110">
+                  <!-- Dynamically rendered temperature curves -->
+                </svg>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+        <!-- --------------------------------------------------------------- -->
+        <!-- TWIN 2: IMS Rotating Bearing Vibration Digital Twin -->
+        <!-- --------------------------------------------------------------- -->
+        <div id="bearingTwin" class="twin-container">
+          <div class="twin-grid">
+            
+            <!-- Controls & Sliders Column -->
+            <div class="twin-controls-card">
+              <div class="twin-card-header">
+                <h3>VIBRATION SENSOR TELEMETRY</h3>
+                <div class="preset-group">
+                  <label for="bearingPresetSelect">Select Preset:</label>
+                  <select id="bearingPresetSelect" class="form-select">
+                    <option value="test2_b1" selected>Test 2 — Bearing 1 (Outer Race Spall)</option>
+                    <option value="test1_b3">Test 1 — Bearing 3 (Inner Race Defect)</option>
+                    <option value="test1_b4">Test 1 — Bearing 4 (Roller Element Defect)</option>
+                    <option value="healthy">Healthy Baseline Bearing</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="control-group">
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Vibration RMS (g)</label>
+                    <span class="slider-val" id="brgRmsVal">0.15 g</span>
+                  </div>
+                  <input type="range" id="brgRms" min="0.01" max="2.50" step="0.01" value="0.15" class="slider-range">
+                </div>
+
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Peak Acceleration (g)</label>
+                    <span class="slider-val" id="brgPeakVal">0.45 g</span>
+                  </div>
+                  <input type="range" id="brgPeak" min="0.05" max="6.00" step="0.05" value="0.45" class="slider-range">
+                </div>
+
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Kurtosis (Impulsive Shocks)</label>
+                    <span class="slider-val" id="brgKurtVal">3.50</span>
+                  </div>
+                  <input type="range" id="brgKurt" min="1.0" max="18.0" step="0.1" value="3.50" class="slider-range">
+                </div>
+
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Crest Factor (Peak / RMS)</label>
+                    <span class="slider-val" id="brgCrestVal">3.00</span>
+                  </div>
+                  <input type="range" id="brgCrest" min="1.0" max="8.0" step="0.1" value="3.00" class="slider-range">
+                </div>
+
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Shaft Rotational Speed (RPM)</label>
+                    <span class="slider-val" id="brgRpmVal">2,000 RPM</span>
+                  </div>
+                  <input type="range" id="brgRpm" min="600" max="3600" step="50" value="2000" class="slider-range">
+                </div>
+
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Operating Hours Elapsed</label>
+                    <span class="slider-val" id="brgHoursVal">120.0 hrs</span>
+                  </div>
+                  <input type="range" id="brgHours" min="10" max="800" step="5" value="120.0" class="slider-range">
+                </div>
+              </div>
+
+              <div class="twin-control-actions">
+                <button id="brgResetParamsBtn" class="btn-outline">Reset to Nominal</button>
+                <button id="brgAskAgentBtn" class="btn-accent">🤖 Diagnose with AI Agent</button>
+              </div>
+            </div>
+
+            <!-- Vibration & Defect Spectrum Results -->
+            <div class="twin-results-card">
+              <div class="twin-card-header">
+                <h3>VIBRATION SEVERITY &amp; DEFECT FREQUENCIES</h3>
+                <span class="status-badge status-a" id="brgIsoBadge">ISO ZONE A — GOOD</span>
+              </div>
+
+              <div class="twin-primary-display">
+                <div class="dial-container">
+                  <svg class="circular-dial" viewBox="0 0 140 140">
+                    <circle class="dial-track" cx="70" cy="70" r="58"></circle>
+                    <circle class="dial-fill" id="brgDialFill" cx="70" cy="70" r="58" stroke-dasharray="364.4" stroke-dashoffset="364.4"></circle>
+                  </svg>
+                  <div class="dial-content">
+                    <span class="dial-number" id="brgRulVal">64.8 h</span>
+                    <span class="dial-caption">PREDICTED RUL</span>
+                  </div>
+                </div>
+
+                <div class="twin-kpis-column">
+                  <div class="twin-stat-box">
+                    <span class="stat-box-label">Degradation Stage</span>
+                    <span class="stat-box-val" id="brgStageVal">Healthy (Normal)</span>
+                    <span class="stat-box-ref" id="brgIsoDesc">ISO 10816: Unrestricted continuous operation</span>
+                  </div>
+                  <div class="twin-stat-box">
+                    <span class="stat-box-label">Kurtosis Excursion</span>
+                    <span class="stat-box-val" id="brgKurtDisplay">3.50</span>
+                    <span class="stat-box-ref">Baseline Gaussian ~3.0 (&gt;6.0 indicates spall)</span>
+                  </div>
+                  <div class="twin-stat-box">
+                    <span class="stat-box-label">Recommended Action</span>
+                    <span class="stat-box-val small-text" id="brgActionVal">Normal vibration. Safe for continuous operation.</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Defect Frequencies Breakdown -->
+              <div class="defect-freq-grid">
+                <div class="freq-box">
+                  <span class="freq-title">BPFO (OUTER RACE)</span>
+                  <span class="freq-val" id="freqBpfo">101.7 Hz</span>
+                  <span class="freq-formula">3.05 &times; Fr</span>
+                </div>
+                <div class="freq-box">
+                  <span class="freq-title">BPFI (INNER RACE)</span>
+                  <span class="freq-val" id="freqBpfi">165.0 Hz</span>
+                  <span class="freq-formula">4.95 &times; Fr</span>
+                </div>
+                <div class="freq-box">
+                  <span class="freq-title">BSF (BALL SPIN)</span>
+                  <span class="freq-val" id="freqBsf">66.3 Hz</span>
+                  <span class="freq-formula">1.99 &times; Fr</span>
+                </div>
+                <div class="freq-box">
+                  <span class="freq-title">FTF (CAGE TRAIN)</span>
+                  <span class="freq-val" id="freqFtf">13.3 Hz</span>
+                  <span class="freq-formula">0.40 &times; Fr</span>
+                </div>
+              </div>
+
+              <!-- Vibration Waveform Canvas Visualizer -->
+              <div class="svg-visualizer-card">
+                <div class="visualizer-header">
+                  <span>REAL-TIME ACCELEROMETER SIGNAL &amp; DEFECT HARMONICS</span>
+                  <span class="mono-label" id="brgSampleRate">Fs: 20 kHz · 6205 Bearing</span>
+                </div>
+                <svg id="brgWaveformSvg" class="thermal-profile-svg" viewBox="0 0 450 100">
+                  <!-- Dynamically rendered waveform -->
+                </svg>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+        <!-- --------------------------------------------------------------- -->
+        <!-- TWIN 3: CNC Milling Machine Digital Twin -->
+        <!-- --------------------------------------------------------------- -->
+        <div id="millingTwin" class="twin-container">
+          <div class="twin-grid">
+            
+            <!-- Controls & Sliders Column -->
+            <div class="twin-controls-card">
+              <div class="twin-card-header">
+                <h3>CNC OPERATING PARAMETERS</h3>
+                <div class="preset-group">
+                  <label for="millingPresetSelect">Select Preset:</label>
+                  <select id="millingPresetSelect" class="form-select">
+                    <option value="machine_142" selected>Machine #142 (High Wear / Risk)</option>
+                    <option value="machine_1">Machine #1 (Nominal Operation)</option>
+                    <option value="thermal_stress">Thermal Strain Regime (Low ΔT)</option>
+                    <option value="high_torque">Overstrain Regime (High Torque)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="control-group">
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Air Temperature (K)</label>
+                    <span class="slider-val" id="millAirVal">300.0 K (26.9 °C)</span>
+                  </div>
+                  <input type="range" id="millAir" min="295" max="305" step="0.1" value="300.0" class="slider-range">
+                </div>
+
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Process Temperature (K)</label>
+                    <span class="slider-val" id="millProcVal">310.0 K (36.9 °C)</span>
+                  </div>
+                  <input type="range" id="millProc" min="305" max="315" step="0.1" value="310.0" class="slider-range">
+                </div>
+
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Spindle Speed (RPM)</label>
+                    <span class="slider-val" id="millRpmVal">1,500 RPM</span>
+                  </div>
+                  <input type="range" id="millRpm" min="1100" max="2900" step="25" value="1500" class="slider-range">
+                </div>
+
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Motor Torque (Nm)</label>
+                    <span class="slider-val" id="millTorqueVal">40.0 Nm</span>
+                  </div>
+                  <input type="range" id="millTorque" min="3.0" max="80.0" step="0.5" value="40.0" class="slider-range">
+                </div>
+
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Tool Wear Time (min)</label>
+                    <span class="slider-val" id="millWearVal">108 min</span>
+                  </div>
+                  <input type="range" id="millWear" min="0" max="260" step="1" value="108" class="slider-range">
+                </div>
+
+                <div class="slider-row">
+                  <div class="slider-label-wrap">
+                    <label>Product Material Grade</label>
+                    <span class="slider-val" id="millGradeVal">M (Medium Quality)</span>
+                  </div>
+                  <div class="grade-radio-group">
+                    <button class="grade-btn" data-grade="L">L (Low)</button>
+                    <button class="grade-btn active" data-grade="M">M (Medium)</button>
+                    <button class="grade-btn" data-grade="H">H (High)</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="twin-control-actions">
+                <button id="millResetParamsBtn" class="btn-outline">Reset to Nominal</button>
+                <button id="millAskAgentBtn" class="btn-accent">🤖 Diagnose with AI Agent</button>
+              </div>
+            </div>
+
+            <!-- CNC ML Prediction & Physics -->
+            <div class="twin-results-card">
+              <div class="twin-card-header">
+                <h3>ML MULTI-MODE FAILURE INFERENCE</h3>
+                <span class="status-badge" id="millStatusBadge">NORMAL OPERATION</span>
+              </div>
+
+              <div class="twin-primary-display">
+                <div class="dial-container">
+                  <svg class="circular-dial" viewBox="0 0 140 140">
+                    <circle class="dial-track" cx="70" cy="70" r="58"></circle>
+                    <circle class="dial-fill" id="millDialFill" cx="70" cy="70" r="58" stroke-dasharray="364.4" stroke-dashoffset="364.4"></circle>
+                  </svg>
+                  <div class="dial-content">
+                    <span class="dial-number" id="millProbVal">0.0%</span>
+                    <span class="dial-caption">FAILURE RISK</span>
+                  </div>
+                </div>
+
+                <div class="twin-kpis-column">
+                  <div class="twin-stat-box">
+                    <span class="stat-box-label">Tool Wear Status</span>
+                    <span class="stat-box-val" id="millWearBandVal">Normal (0–150 min)</span>
+                    <span class="stat-box-ref">Critical Wear Limit: 200 min</span>
+                  </div>
+                  <div class="twin-stat-box">
+                    <span class="stat-box-label">Mechanical Spindle Power</span>
+                    <span class="stat-box-val" id="millPowerVal">6,283 W</span>
+                    <span class="stat-box-ref">Nominal Window: 3,500 – 9,000 W</span>
+                  </div>
+                  <div class="twin-stat-box">
+                    <span class="stat-box-label">Thermal Dissipation (ΔT)</span>
+                    <span class="stat-box-val" id="millTempDiffVal">10.0 K</span>
+                    <span class="stat-box-ref">Safe Heat Dissipation: &gt; 8.6 K</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 5 Specific Failure Modes Breakdown -->
+              <div class="failure-modes-card">
+                <div class="modes-card-header">
+                  <span>SPECIFIC FAILURE MODE BREAKDOWN (XGBOOST ENSEMBLE)</span>
+                </div>
+                <div class="mode-bars-list">
+                  <div class="mode-bar-row">
+                    <span class="mode-name">TWF (Tool Wear Failure)</span>
+                    <div class="mode-bar-track">
+                      <div class="mode-bar-fill" id="barTwf" style="width: 1%;"></div>
+                    </div>
+                    <span class="mode-pct" id="pctTwf">0.0%</span>
+                  </div>
+                  <div class="mode-bar-row">
+                    <span class="mode-name">HDF (Heat Dissipation Failure)</span>
+                    <div class="mode-bar-track">
+                      <div class="mode-bar-fill" id="barHdf" style="width: 1%;"></div>
+                    </div>
+                    <span class="mode-pct" id="pctHdf">0.0%</span>
+                  </div>
+                  <div class="mode-bar-row">
+                    <span class="mode-name">PWF (Power Draw Failure)</span>
+                    <div class="mode-bar-track">
+                      <div class="mode-bar-fill" id="barPwf" style="width: 1%;"></div>
+                    </div>
+                    <span class="mode-pct" id="pctPwf">0.0%</span>
+                  </div>
+                  <div class="mode-bar-row">
+                    <span class="mode-name">OSF (Overstrain Failure)</span>
+                    <div class="mode-bar-track">
+                      <div class="mode-bar-fill" id="barOsf" style="width: 1%;"></div>
+                    </div>
+                    <span class="mode-pct" id="pctOsf">0.0%</span>
+                  </div>
+                  <div class="mode-bar-row">
+                    <span class="mode-name">RNF (Random Failure)</span>
+                    <div class="mode-bar-track">
+                      <div class="mode-bar-fill" id="barRnf" style="width: 1%;"></div>
+                    </div>
+                    <span class="mode-pct" id="pctRnf">0.0%</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- TAB 3: UNIFIED ML MULTI-ASSET PREDICTOR -->
+      <!-- ================================================================= -->
+      <section id="predictorTab" class="view-panel">
+        <div class="predictor-layout">
           
-          <!-- Welcoming Engineering Splash -->
-          <div class="system-welcome-card" id="welcomeCard">
-            <div class="welcome-header">
-              <div class="welcome-tag">SYSTEM ONLINE · 3 MACHINE CLASSES · MULTI-ASSET ML PREDICTOR</div>
-              <h2>Industrial Plant Monitoring Agent</h2>
-              <p class="welcome-desc">
-                Unified thermodynamic fouling calculations, NASA bearing vibration diagnostics & RUL,
-                CNC milling machine failure predictions, and engineering maintenance SOP retrieval.
-              </p>
+          <!-- Inference Configuration Form -->
+          <div class="card-panel predictor-form-panel">
+            <div class="panel-header">
+              <div class="panel-title-group">
+                <span class="panel-icon">⚡</span>
+                <h3>MULTI-ASSET PREDICTIVE MAINTENANCE INFERENCE</h3>
+              </div>
             </div>
             
-            <div class="capability-grid">
-              <div class="cap-card" data-prompt="Analyze Heat Exchanger E01 and compare with E02 fouling rate">
-                <span class="cap-icon">⚡</span>
-                <span class="cap-title">Thermodynamic Fouling</span>
-                <span class="cap-sub">Fouling resistance (Rf), TEMA threshold, and annual operating penalty ($/yr).</span>
+            <form id="unifiedPredictForm" class="predict-form">
+              <div class="form-row">
+                <label for="predictAssetClass">Machine Asset Category:</label>
+                <select id="predictAssetClass" class="form-select">
+                  <option value="milling">CNC Milling Machine (ai4i2020 dataset)</option>
+                  <option value="heat_exchanger">Shell &amp; Tube Heat Exchanger (Fouling dataset)</option>
+                  <option value="bearing">Rotating Bearing (IMS vibration dataset)</option>
+                </select>
               </div>
-              <div class="cap-card" data-prompt="Analyze Bearing 1 in Test 2. What is its RUL and ISO zone?">
-                <span class="cap-icon">📊</span>
-                <span class="cap-title">Vibration Diagnostics</span>
-                <span class="cap-sub">RMS trend, kurtosis, Remaining Useful Life (RUL), and ISO 10816 classification.</span>
+
+              <!-- Milling Fields -->
+              <div id="millingFormFields" class="asset-fields-group">
+                <div class="form-row">
+                  <label for="predMachineId">Machine UDI Identifier (1 to 10,000):</label>
+                  <input type="number" id="predMachineId" min="1" max="10000" value="142" class="form-input">
+                </div>
               </div>
-              <div class="cap-card" data-prompt="Predict failure on CNC Milling Machine 142. Check TWF, HDF, PWF, and OSF failure modes.">
-                <span class="cap-icon">⚙️</span>
-                <span class="cap-title">CNC Milling ML Prediction</span>
-                <span class="cap-sub">Trained XGBoost models for TWF, HDF, PWF, OSF, RNF on 10,000 machines.</span>
+
+              <!-- HX Fields -->
+              <div id="hxFormFields" class="asset-fields-group" style="display: none;">
+                <div class="form-row">
+                  <label for="predExchangerId">Heat Exchanger Unit:</label>
+                  <select id="predExchangerId" class="form-select">
+                    <option value="E01">E01 — Heavy Naphtha</option>
+                    <option value="E02" selected>E02 — Kerosene (Fouling Monitored)</option>
+                    <option value="E03">E03 — Light Diesel</option>
+                    <option value="E04">E04 — LVGO</option>
+                    <option value="E05">E05 — Heavy Diesel</option>
+                  </select>
+                </div>
               </div>
-              <div class="cap-card" data-prompt="What are the mechanical and chemical cleaning procedures for fouled tubes?">
-                <span class="cap-icon">📖</span>
-                <span class="cap-title">Maintenance SOP RAG</span>
-                <span class="cap-sub">Exact mechanical pigging and chemical wash procedures directly from plant manuals.</span>
+
+              <!-- Bearing Fields -->
+              <div id="bearingFormFields" class="asset-fields-group" style="display: none;">
+                <div class="form-row">
+                  <label for="predTestId">Bearing Campaign ID:</label>
+                  <select id="predTestId" class="form-select">
+                    <option value="1">Campaign 1 (Bearing 3 Inner / Bearing 4 Roller)</option>
+                    <option value="2" selected>Campaign 2 (Bearing 1 Outer Race Defect)</option>
+                    <option value="3">Campaign 3 (Bearing 3 Outer Race Defect)</option>
+                  </select>
+                </div>
+                <div class="form-row">
+                  <label for="predBearingId">Bearing Channel:</label>
+                  <select id="predBearingId" class="form-select">
+                    <option value="Bearing1" selected>Bearing 1</option>
+                    <option value="Bearing2">Bearing 2</option>
+                    <option value="Bearing3">Bearing 3</option>
+                    <option value="Bearing4">Bearing 4</option>
+                  </select>
+                </div>
+              </div>
+
+              <button type="submit" id="runInferenceBtn" class="btn-accent btn-block">
+                <span>Run Unified ML Prediction &rarr;</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- Inference Results Canvas -->
+          <div class="card-panel predictor-results-panel">
+            <div class="panel-header">
+              <div class="panel-title-group">
+                <span class="panel-icon">📈</span>
+                <h3>PREDICTIVE INFERENCE OUTPUT</h3>
+              </div>
+              <span class="mono-label" id="inferenceModelInfo">XGBoost Ensemble</span>
+            </div>
+
+            <div id="predictOutputContainer" class="predict-output-wrap">
+              <div class="empty-state-prompt">
+                <span class="empty-icon">⚡</span>
+                <h4>Ready for Inference</h4>
+                <p>Select an asset class and machine parameters to run trained XGBoost failure prediction.</p>
               </div>
             </div>
           </div>
 
         </div>
+      </section>
 
-        <!-- Telemetry Status Ribbon during query execution -->
-        <div class="query-progress-bar" id="queryProgressBar" style="display: none;">
-          <div class="progress-pulse-line"></div>
-          <div class="progress-caption">
-            <span class="progress-spinner"></span>
-            <span id="progressText">Executing engineering tools & analyzing plant telemetry...</span>
-          </div>
-        </div>
-
-        <!-- Command Input Console -->
-        <div class="input-console-wrapper">
-          <form class="input-form" id="chatForm">
-            <div class="input-field-container">
-              <textarea 
-                id="queryInput" 
-                class="query-textarea" 
-                rows="1" 
-                placeholder="Ask about heat exchangers, bearing vibration, ISO zones, or cleaning SOPs..."
-                autocomplete="off"
-                spellcheck="false"
-              ></textarea>
-              <div class="input-meta">
-                <span class="kbd-hint">Press <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for newline</span>
+      <!-- ================================================================= -->
+      <!-- TAB 4: AI PLANT DIAGNOSTICS AGENT CONSOLE -->
+      <!-- ================================================================= -->
+      <section id="agentTab" class="view-panel">
+        <div class="agent-console-layout">
+          
+          <!-- Agent Chat Stream -->
+          <div class="agent-chat-container">
+            <div class="chat-header-bar">
+              <div class="chat-header-left">
+                <span class="chat-badge">AI AGENT ACTIVE</span>
+                <span class="chat-sub">Autonomous Tool-Calling across Heat Exchangers, Bearings &amp; Milling Machines</span>
+              </div>
+              <div class="chat-header-right">
+                <button id="resetAgentSessionBtn" class="btn-outline">Clear History</button>
               </div>
             </div>
-            <button type="submit" id="sendBtn" class="btn-send" title="Send Query">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-            </button>
-          </form>
+
+            <!-- Messages Stream -->
+            <div class="chat-messages-scroll" id="agentMessagesContainer">
+              <!-- Welcome Hero Card -->
+              <div class="agent-hero-card" id="agentHeroCard">
+                <div class="hero-tag">AUTONOMOUS MULTI-ASSET PLANT AGENT</div>
+                <h2>Industrial Plant Monitoring Agent (IPMA)</h2>
+                <p>
+                  Equipped with 9 analytical, engineering, ML prediction, and SOP retrieval tools.
+                  Ask about thermal fouling rates, NASA bearing vibration severity, CNC tool wear failure modes,
+                  or standard maintenance pigging procedures.
+                </p>
+                <div class="hero-actions-grid">
+                  <button class="hero-action-card" data-prompt="Analyze Heat Exchanger E02 and calculate its fouling resistance, energy penalty, and annual financial loss.">
+                    <span class="h-icon">⚡</span>
+                    <strong>E02 Fouling Analysis</strong>
+                    <span>Rf, LMTD, TEMA limits &amp; loss</span>
+                  </button>
+                  <button class="hero-action-card" data-prompt="Analyze Bearing 1 in Test 2. What is its RUL and ISO 10816 vibration zone?">
+                    <span class="h-icon">📊</span>
+                    <strong>Bearing Vibration Health</strong>
+                    <span>RMS, Kurtosis, ISO zones &amp; RUL</span>
+                  </button>
+                  <button class="hero-action-card" data-prompt="Predict failure for CNC Milling Machine 142. Check TWF, HDF, PWF, and OSF failure modes.">
+                    <span class="h-icon">⚙️</span>
+                    <strong>CNC Machine #142 Risk</strong>
+                    <span>5-mode XGBoost inference</span>
+                  </button>
+                  <button class="hero-action-card" data-prompt="Walk me through the chemical cleaning procedure for fouled heat exchanger tubes.">
+                    <span class="h-icon">📖</span>
+                    <strong>Chemical Cleaning SOP</strong>
+                    <span>Step-by-step plant maintenance</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Query Execution Spinner Indicator -->
+            <div class="chat-executing-indicator" id="agentQuerySpinner" style="display: none;">
+              <span class="exec-spinner"></span>
+              <span id="agentSpinnerText">Agent executing engineering tools &amp; synthesizing diagnostic report...</span>
+            </div>
+
+            <!-- Input Bar -->
+            <div class="chat-input-bar">
+              <form id="agentChatForm" class="chat-form-row">
+                <textarea 
+                  id="agentQueryInput" 
+                  class="chat-textarea" 
+                  rows="1" 
+                  placeholder="Ask the Agent about heat exchangers, bearing vibration, CNC machines, or cleaning SOPs..."
+                  autocomplete="off"
+                  spellcheck="false"
+                ></textarea>
+                <button type="submit" id="agentSendBtn" class="btn-send" title="Send Question to Agent">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                </button>
+              </form>
+            </div>
+
+          </div>
+
         </div>
+      </section>
 
-      </main>
+    </main>
 
+    <!-- =================================================================== -->
+    <!-- SLIDE-OUT AGENT COPILOT DRAWER (ACCESSIBLE FROM EVERY TAB) -->
+    <!-- =================================================================== -->
+    <div id="copilotDrawer" class="copilot-drawer">
+      <div class="drawer-header">
+        <div class="drawer-title">
+          <span class="drawer-icon">🤖</span>
+          <span>PLANT COPILOT AGENT</span>
+        </div>
+        <button id="closeCopilotBtn" class="drawer-close-btn">&times;</button>
+      </div>
+      <div class="drawer-body" id="drawerMessagesContainer">
+        <div class="drawer-welcome">
+          <p>Hi, I am your plant monitoring copilot. Ask me any diagnostic question about current simulator settings or plant assets.</p>
+        </div>
+      </div>
+      <div class="drawer-footer">
+        <form id="drawerChatForm" class="drawer-input-form">
+          <input type="text" id="drawerQueryInput" class="drawer-input" placeholder="Ask copilot..." autocomplete="off">
+          <button type="submit" class="drawer-send-btn">&rarr;</button>
+        </form>
+      </div>
     </div>
+
   </div>
 
   <script src="/static/app.js"></script>

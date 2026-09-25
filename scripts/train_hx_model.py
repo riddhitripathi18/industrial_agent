@@ -15,9 +15,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import roc_auc_score, r2_score
 import xgboost as xgb
 
-BASE_DIR = r"c:\Users\riddh\OneDrive\Desktop\predictive_maintenance"
-DATA_PATH = os.path.join(BASE_DIR, "heat_exchanger_fouling_clean.csv")
-MODELS_DIR = os.path.join(BASE_DIR, "models")
+from pathlib import Path
+ROOT_DIR = Path(__file__).resolve().parent.parent
+DATA_PATH = str(ROOT_DIR / "heat_exchanger_fouling_clean.csv")
+MODELS_DIR = str(ROOT_DIR / "models")
 os.makedirs(MODELS_DIR, exist_ok=True)
 
 print("Loading Heat Exchanger dataset...")

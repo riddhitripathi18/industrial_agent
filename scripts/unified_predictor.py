@@ -13,9 +13,9 @@ import pickle
 import numpy as np
 import pandas as pd
 from typing import Dict, Any, Optional
-
-BASE_DIR = r"c:\Users\riddh\OneDrive\Desktop\predictive_maintenance"
-MODELS_DIR = os.path.join(BASE_DIR, "models")
+from pathlib import Path
+ROOT_DIR = Path(__file__).resolve().parent.parent
+MODELS_DIR = str(ROOT_DIR / "models")
 
 
 class UnifiedPredictor:

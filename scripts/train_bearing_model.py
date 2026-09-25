@@ -14,9 +14,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report, r2_score, mean_absolute_error
 import xgboost as xgb
 
-BASE_DIR = r"c:\Users\riddh\OneDrive\Desktop\predictive_maintenance"
-DATA_PATH = os.path.join(BASE_DIR, "bearings_all_features.csv")
-MODELS_DIR = os.path.join(BASE_DIR, "models")
+from pathlib import Path
+ROOT_DIR = Path(__file__).resolve().parent.parent
+DATA_PATH = str(ROOT_DIR / "bearings_all_features.csv")
+MODELS_DIR = str(ROOT_DIR / "models")
 os.makedirs(MODELS_DIR, exist_ok=True)
 
 print("Loading Bearing Vibration dataset...")

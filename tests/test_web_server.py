@@ -144,4 +144,78 @@ class TestWebServerEndpoints:
         response = client.get("/")
         assert response.status_code == 200
         assert "text/html" in response.headers.get("content-type", "")
-        assert "IPMA" in response.text
+        assert "INDUSTRIAL AGENT" in response.text or "IPMA" in response.text
+
+    def test_simulate_milling_endpoint(self, client):
+        """POST /api/simulator/milling should return digital twin failure probability and wear band."""
+        payload = {
+            "air_temp_k": 300.0,
+            "process_temp_k": 310.0,
+            "rotational_speed_rpm": 1500.0,
+            "torque_nm": 40.0,
+            "tool_wear_min": 210.0,
+            "product_type": "M"
+        }
+        res = client.post("/api/simulator/milling", json=payload)
+        assert res.status_code == 200
+        data = res.json()
+        assert "overall_failure_probability" in data
+        assert "failure_modes" in data
+        assert "wear_band" in data
+        assert data["wear_status"] == "DANGER"
+
+    def test_simulate_hx_endpoint(self, client):
+        """POST /api/simulator/hx should return thermodynamic fouling and economic penalty."""
+        payload = {
+            "exchanger_id": "E02",
+            "tube_t_in": 194.7,
+            "tube_t_out": 234.6,
+            "tube_flow": 103.2,
+            "shell_t_in": 280.6,
+            "shell_t_out": 229.1,
+            "shell_flow": 84.6,
+            "time_hr": 1000.0,
+            "crude_api": 32.0,
+            "crude_tan": 0.8,
+            "crude_chlorides": 15.0
+        }
+        res = client.post("/api/simulator/hx", json=payload)
+        assert res.status_code == 200
+        data = res.json()
+        assert "calculated_rf_m2KW" in data
+        assert "tema_pct" in data
+        assert "annual_cost_penalty_USD" in data
+        assert "days_to_cleaning" in data
+
+    def test_simulate_bearing_endpoint(self, client):
+        """POST /api/simulator/bearing should return ISO zone, RUL, and defect frequencies."""
+        payload = {
+            "bearing_id": "Bearing1",
+            "rms": 0.35,
+            "kurtosis": 4.2,
+            "peak": 1.1,
+            "peak_to_peak": 2.2,
+            "crest_factor": 3.14,
+            "hours_elapsed": 150.0,
+            "test_id": 2,
+            "rpm": 2000.0
+        }
+        res = client.post("/api/simulator/bearing", json=payload)
+        assert res.status_code == 200
+        data = res.json()
+        assert "iso_zone" in data
+        assert "predicted_rul_hours" in data
+        assert "defect_frequencies_Hz" in data
+        assert "BPFO_outer_race" in data["defect_frequencies_Hz"]
+
+    def test_fleet_summary_endpoint(self, client):
+        """GET /api/fleet/summary should return aggregate fleet stats."""
+        res = client.get("/api/fleet/summary")
+        assert res.status_code == 200
+        data = res.json()
+        assert "heat_exchangers" in data
+        assert "bearings" in data
+        assert "milling_fleet" in data
+        assert data["heat_exchangers"]["total"] == 5
+        assert data["milling_fleet"]["total_machines"] == 10000
+
